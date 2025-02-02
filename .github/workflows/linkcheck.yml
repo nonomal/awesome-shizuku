@@ -1,0 +1,35 @@
+name: linkcheck
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ['README.md', 'pages/UNLISTED.md']
+
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Ruby 2.6
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '2.6'
+    - name: Run awesome_bot
+      run: |
+        set +e # Don't cancel step when the bot fails
+
+        gem install awesome_bot
+        FILE=${{ matrix.file }}
+        FILE_SLUG="${FILE//\//-}"
+        awesome_bot -f "$FILE" -a 429 --allow-dupe --base-url https://github.com/timschneeb/awesome-shizuku/blob/master/
+        echo "## $FILE" >> $$GITHUB_STEP_SUMMARY
+        cat ab-results-${FILE_SLUG}-markdown-table.json | jq .message -r >> $GITHUB_STEP_SUMMARY
